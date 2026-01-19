@@ -78,15 +78,27 @@ func (c *Config) check() error {
 	if len(c.Projects) == 0 {
 		return nil
 	}
+	pnames := make(map[string]struct{})
 	for _, p := range c.Projects {
 		if p.Name == "" {
 			return fmt.Errorf("project name is required")
+		}
+		if _, exists := pnames[p.Name]; exists {
+			return fmt.Errorf("duplicate project name %s", p.Name)
+		} else {
+			pnames[p.Name] = struct{}{}
 		}
 		if len(p.SourcePaths) == 0 {
 			return fmt.Errorf("project %s: source_paths is required", p.Name)
 		}
 		if len(p.RcloneRemotes) != 0 {
+			rnames := make(map[string]struct{})
 			for _, r := range p.RcloneRemotes {
+				if _, exists := rnames[r.Name]; exists {
+					return fmt.Errorf("project %s: duplicate rclone_remote name %s", p.Name, r.Name)
+				} else {
+					rnames[r.Name] = struct{}{}
+				}
 				if r.Name == "" {
 					return fmt.Errorf("project %s: rclone_remote name is required", p.Name)
 				}
