@@ -14,12 +14,12 @@ OUTPUT_DIR="$PROJECT_ROOT/bin"
 
 case "$component" in
   backup)
-    PACKAGE="$PROJECT_ROOT/cmd/backupd"
+    PACKAGE="$PROJECT_ROOT/cmd/backup"
     BINARY_NAME="hermes-backup"
     ;;
   cli)
     PACKAGE="$PROJECT_ROOT/cmd/cli"
-    BINARY_NAME="hermes-cli"
+    BINARY_NAME="hermes"
     ;;
   *)
     echo "Unsupported component: $component"
@@ -32,7 +32,7 @@ mkdir -p "$OUTPUT_DIR"
 build_target() {
   local os="$1"
   GOOS="$os" GOARCH=amd64 go build \
-    -o "$OUTPUT_DIR/${BINARY_NAME}-${os}" \
+    -o "$OUTPUT_DIR/"$os"/${BINARY_NAME}" \
     "$PACKAGE"
   echo "Built ${BINARY_NAME}-${os}"
 }
