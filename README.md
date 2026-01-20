@@ -1,4 +1,4 @@
-# Hermes
+# Hermes [中文](README_CN.md) | [English](README.md)
 
 > **A lightweight Cloud Backup Automator powered by Rclone.**
 
