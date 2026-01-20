@@ -19,10 +19,9 @@ type Logging struct {
 }
 
 type Defaults struct {
-	Provider     string `yaml:"provider"`
+	RcloneRemote string `yaml:"rclone_remote"`
 	Bucket       string `yaml:"bucket"`
 	Cron         string `yaml:"cron"`
-	RcloneRemote string `yaml:"rclone_remote"`
 }
 
 type Project struct {

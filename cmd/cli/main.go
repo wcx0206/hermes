@@ -17,6 +17,7 @@ func main() {
 	root.AddCommand(
 		cli.NewProjectCmd(),
 		cli.NewServerCmd(),
+		cli.NewConfigCmd(),
 	)
 
 	if err := root.Execute(); err != nil {
