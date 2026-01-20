@@ -67,6 +67,7 @@ func newProjectAddCmd(opts *projectOpts) *cobra.Command {
 		name          string
 		sourcePaths   []string
 		rcloneRemotes []config.RcloneRemote
+		mode          string
 		cronExpr      string
 	)
 	cmd := &cobra.Command{
@@ -85,6 +86,9 @@ func newProjectAddCmd(opts *projectOpts) *cobra.Command {
 				if len(sourcePaths) == 0 {
 					return errors.New("at least one source path is required")
 				}
+			}
+			if mode == "" {
+				mode = promptString(reader, "Mode (sync/copy)")
 			}
 			if len(rcloneRemotes) == 0 {
 				rcloneRemotes = promptRemotes(reader)
@@ -106,6 +110,7 @@ func newProjectAddCmd(opts *projectOpts) *cobra.Command {
 				SourcePaths:   sourcePaths,
 				Cron:          cronExpr,
 				RcloneRemotes: rcloneRemotes,
+				Mode:          mode,
 			}
 
 			replaced := false
@@ -208,6 +213,9 @@ func newProjectUpdateCmd(opts *projectOpts) *cobra.Command {
 			if sources := promptDefault(reader, "Source paths (comma separated)", strings.Join(project.SourcePaths, ",")); sources != "" {
 				project.SourcePaths = splitCSV(sources)
 			}
+			if v := promptDefault(reader, "Mode (sync/copy)", project.Mode); v != "" {
+				project.Mode = v
+			}
 			if cron := promptDefault(reader, "Cron expression", project.Cron); cron != "" {
 				project.Cron = cron
 			}
@@ -226,6 +234,7 @@ func newProjectUpdateCmd(opts *projectOpts) *cobra.Command {
 
 func printProject(p config.Project) {
 	fmt.Printf("Name: %s\n", p.Name)
+	fmt.Printf("Mode: %s\n", p.Mode)
 	fmt.Printf("Source Paths: %v\n", p.SourcePaths)
 	fmt.Printf("Cron: %s\n", p.Cron)
 	fmt.Printf("Rclone Remotes:\n")

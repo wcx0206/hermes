@@ -76,6 +76,7 @@ func newConfigEditCmd(opts *configOpts) *cobra.Command {
 			cfg.Defaults.RcloneRemote = promptDefault(reader, "Defaults rclone_remote", cfg.Defaults.RcloneRemote)
 			cfg.Defaults.Bucket = promptDefault(reader, "Defaults bucket", cfg.Defaults.Bucket)
 			cfg.Defaults.Cron = promptDefault(reader, "Defaults cron", cfg.Defaults.Cron)
+			cfg.Defaults.Mode = promptDefault(reader, "Defaults mode (sync/copy)", cfg.Defaults.Mode)
 
 			return config.SaveConfig(opts.configPath, cfg)
 		},

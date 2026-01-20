@@ -22,10 +22,12 @@ type Defaults struct {
 	RcloneRemote string `yaml:"rclone_remote"`
 	Bucket       string `yaml:"bucket"`
 	Cron         string `yaml:"cron"`
+	Mode         string `yaml:"mode"` // sync or copy
 }
 
 type Project struct {
 	Name          string         `yaml:"name"`
+	Mode          string         `yaml:"mode"` // sync or copy
 	SourcePaths   []string       `yaml:"source_paths"`
 	Cron          string         `yaml:"cron"`
 	RcloneRemotes []RcloneRemote `yaml:"rclone_remotes"`
@@ -63,6 +65,9 @@ func (c *Config) applyDefaults() {
 		if p.Cron == "" {
 			p.Cron = c.Defaults.Cron
 		}
+		if p.Mode == "" {
+			p.Mode = c.Defaults.Mode
+		}
 		if len(p.RcloneRemotes) == 0 && c.Defaults.RcloneRemote != "" {
 			p.RcloneRemotes = []RcloneRemote{
 				{
@@ -77,6 +82,9 @@ func (c *Config) applyDefaults() {
 func (c *Config) check() error {
 	if len(c.Projects) == 0 {
 		return nil
+	}
+	if c.Defaults.Mode != "sync" && c.Defaults.Mode != "copy" && c.Defaults.Mode != "" {
+		return fmt.Errorf("defaults mode must be 'sync' or 'copy'")
 	}
 	pnames := make(map[string]struct{})
 	for _, p := range c.Projects {
