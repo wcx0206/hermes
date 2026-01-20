@@ -18,7 +18,7 @@ type overview struct {
 }
 
 type configOpts struct {
-	path string
+	configPath string
 }
 
 func NewConfigCmd() *cobra.Command {
@@ -27,7 +27,7 @@ func NewConfigCmd() *cobra.Command {
 		Use:   "config",
 		Short: "Inspect or edit hermes configuration",
 	}
-	cmd.PersistentFlags().StringVar(&opts.path, "config", "config.yaml", "config file path")
+	cmd.PersistentFlags().StringVar(&opts.configPath, "config", "config.yaml", "config file path")
 
 	cmd.AddCommand(
 		newConfigShowCmd(opts),
@@ -41,7 +41,7 @@ func newConfigShowCmd(opts *configOpts) *cobra.Command {
 		Use:   "show",
 		Short: "Print current config.yaml",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cfg, err := config.LoadConfig(opts.path)
+			cfg, err := config.LoadConfig(opts.configPath)
 			if err != nil {
 				return err
 			}
@@ -64,7 +64,7 @@ func newConfigEditCmd(opts *configOpts) *cobra.Command {
 		Use:   "edit",
 		Short: "Interactively update logging/defaults",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cfg, err := config.LoadConfig(opts.path)
+			cfg, err := config.LoadConfig(opts.configPath)
 			if err != nil {
 				return err
 			}
@@ -77,7 +77,7 @@ func newConfigEditCmd(opts *configOpts) *cobra.Command {
 			cfg.Defaults.Bucket = promptDefault(reader, "Defaults bucket", cfg.Defaults.Bucket)
 			cfg.Defaults.Cron = promptDefault(reader, "Defaults cron", cfg.Defaults.Cron)
 
-			return config.SaveConfig(opts.path, cfg)
+			return config.SaveConfig(opts.configPath, cfg)
 		},
 	}
 }
