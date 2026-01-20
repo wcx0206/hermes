@@ -16,7 +16,7 @@
 1. **获取并运行脚本**：
 
    ```bash
-   curl -fsSL https://wcx0206.github.io/hermes/install.sh | bash
+   curl -fsSL https://hermes.elysiapro.cn/install.sh | bash
    ```
 
    安装脚本会将最新的 `hermes-backup` 与 `hermes` 下载到 `~/.local/bin`。

@@ -16,7 +16,7 @@ The project consists of two main components:
 1. **Via Script**:
 
    ```bash
-   curl -fsSL https://wcx0206.github.io/hermes/install.sh | bash
+   curl -fsSL https://hermes.elysiapro.cn/install.sh | bash
    ```
 
    The script downloads `hermes-backup` and `hermes` to `~/.local/bin`.
