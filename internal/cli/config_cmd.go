@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -27,7 +28,12 @@ func NewConfigCmd() *cobra.Command {
 		Use:   "config",
 		Short: "Inspect or edit hermes configuration",
 	}
-	cmd.PersistentFlags().StringVar(&opts.configPath, "config", "config.yaml", "config file path")
+	cliPath, err := os.Executable()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "failed to get executable path:", err)
+	}
+	configPath := filepath.Join(filepath.Dir(cliPath), "config.yaml")
+	cmd.PersistentFlags().StringVar(&opts.configPath, "config", configPath, "config file path")
 
 	cmd.AddCommand(
 		newConfigShowCmd(opts),
