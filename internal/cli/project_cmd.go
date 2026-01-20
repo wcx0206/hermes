@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
-	"syscall"
 
 	"github.com/spf13/cobra"
 
@@ -223,36 +221,6 @@ func newProjectUpdateCmd(opts *projectOpts) *cobra.Command {
 			return nil
 		},
 	}
-	return cmd
-}
-
-func NewServiceCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "service",
-		Short: "Interact with the running hermes service",
-	}
-	var pidFile string
-	restart := &cobra.Command{
-		Use:   "restart",
-		Short: "Send SIGHUP to the service for safe restart",
-		RunE: func(_ *cobra.Command, _ []string) error {
-			pidBytes, err := os.ReadFile(pidFile)
-			if err != nil {
-				return err
-			}
-			pid, err := strconv.Atoi(strings.TrimSpace(string(pidBytes)))
-			if err != nil {
-				return err
-			}
-			process, err := os.FindProcess(pid)
-			if err != nil {
-				return err
-			}
-			return process.Signal(syscall.SIGHUP)
-		},
-	}
-	restart.Flags().StringVar(&pidFile, "pid-file", "/var/run/hermes.pid", "service PID file")
-	cmd.AddCommand(restart)
 	return cmd
 }
 

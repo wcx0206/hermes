@@ -3,11 +3,20 @@ package backup
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
+func getBackupPidFilePath() string {
+	execPath, err := os.Executable()
+	if err != nil {
+		return "~/.cache/hermes/hermes-backup.pid"
+	}
+	return filepath.Join(filepath.Dir(execPath), "hermes-backup.pid")
+}
+
 func GetPid() (int, error) {
-	data, err := os.ReadFile("/var/run/hermes-backup.pid")
+	data, err := os.ReadFile(getBackupPidFilePath())
 	pidStr := string(data)
 	if err != nil || pidStr == "" {
 		return 0, err
@@ -19,7 +28,11 @@ func GetPid() (int, error) {
 }
 
 func SavePid() error {
-	pid := os.Getegid()
-	pidFile := "/var/run/hermes-backup.pid"
-	return os.WriteFile(pidFile, []byte(fmt.Sprint(pid)), 0o644)
+	pid := os.Getpid()
+
+	return os.WriteFile(getBackupPidFilePath(), []byte(fmt.Sprint(pid)), 0o644)
+}
+
+func RemovePid() error {
+	return os.Remove(getBackupPidFilePath())
 }
