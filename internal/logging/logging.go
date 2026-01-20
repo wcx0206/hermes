@@ -40,10 +40,14 @@ func Init(cfg config.Logging) error {
 
 		encCfg := zap.NewProductionEncoderConfig()
 		encCfg.EncodeTime = zapcore.ISO8601TimeEncoder
+		var syncer zapcore.WriteSyncer = writer
 
+		if cfg.Debug {
+			syncer = zapcore.NewMultiWriteSyncer(writer, zapcore.AddSync(os.Stdout))
+		}
 		core := zapcore.NewCore(
 			zapcore.NewJSONEncoder(encCfg),
-			zapcore.NewMultiWriteSyncer(writer, zapcore.AddSync(os.Stdout)),
+			syncer,
 			zap.InfoLevel,
 		)
 

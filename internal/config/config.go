@@ -14,7 +14,8 @@ type Config struct {
 }
 
 type Logging struct {
-	Path string `yaml:"path"`
+	Path  string `yaml:"path"`
+	Debug bool   `yaml:"debug"`
 }
 
 type Defaults struct {
