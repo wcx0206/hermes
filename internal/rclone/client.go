@@ -19,16 +19,21 @@ func NewRcloneClient(opts Options) *Client {
 	}
 }
 
-func (c *Client) Sync(localPath, remotePath string) error {
-	cmd := exec.Command(
-		"rclone",
-		"sync",
-		localPath,
-		fmt.Sprintf("%s:%s", c.RemoteName, remotePath),
-		"--transfers=4",
-		"--checkers=4",
-	)
-	return cmd.Run()
+func (c *Client) Sync(localPath []string, remotePath string) error {
+	for _, lp := range localPath {
+		cmd := exec.Command(
+			"rclone",
+			"sync",
+			lp,
+			fmt.Sprintf("%s:%s", c.RemoteName, remotePath),
+			"--transfers=4",
+			"--checkers=4",
+		)
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("rclone sync %s to %s:%s failed: %w", lp, c.RemoteName, remotePath, err)
+		}
+	}
+	return nil
 }
 
 func (c *Client) Copy(localPaths []string, remotePath string) error {
