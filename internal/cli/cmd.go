@@ -11,7 +11,6 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 
 	"github.com/wcx0206/hermes/internal/config"
 )
@@ -31,16 +30,17 @@ func NewProjectCmd() *cobra.Command {
 	cmd.AddCommand(newProjectListCmd(opts))
 	cmd.AddCommand(newProjectAddCmd(opts))
 	cmd.AddCommand(newProjectDeleteCmd(opts))
+	cmd.AddCommand(newProjectUpdateCmd(opts))
 	return cmd
 }
 
 func newProjectListCmd(opts *projectOpts) *cobra.Command {
 	return &cobra.Command{
 		Use:     "list",
-		Aliases: []string{"-l"},
+		Aliases: []string{"ls"},
 		Short:   "List configured projects",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			cfg, err := loadConfig(opts.configPath)
+			cfg, err := config.LoadConfig(opts.configPath)
 			if err != nil {
 				fmt.Fprint(cmd.OutOrStderr(), "failed to load config:", err)
 				return err
@@ -54,13 +54,15 @@ func newProjectListCmd(opts *projectOpts) *cobra.Command {
 			})
 			for _, p := range cfg.Projects {
 				fmt.Fprintf(cmd.OutOrStdout(), "- %s (cron=%s, sources=%v)\n", p.Name, p.Cron, p.SourcePaths)
+				for _, r := range p.RcloneRemotes {
+					fmt.Fprintf(cmd.OutOrStdout(), "    - rclone remote: %s -> %s\n", r.Name, r.Bucket)
+				}
 			}
 			return nil
 		},
 	}
 }
 
-// 添加一个项目我希望可以逐步输入
 func newProjectAddCmd(opts *projectOpts) *cobra.Command {
 	var (
 		name          string
@@ -95,7 +97,7 @@ func newProjectAddCmd(opts *projectOpts) *cobra.Command {
 			if len(sourcePaths) == 0 {
 				return errors.New("at least one source path is required")
 			}
-			cfg, err := loadConfig(opts.configPath)
+			cfg, err := config.LoadConfig(opts.configPath)
 			if err != nil {
 				return err
 			}
@@ -106,7 +108,7 @@ func newProjectAddCmd(opts *projectOpts) *cobra.Command {
 				Cron:          cronExpr,
 				RcloneRemotes: rcloneRemotes,
 			}
-			// overwrite if exists
+
 			replaced := false
 			for i, p := range cfg.Projects {
 				if p.Name == name {
@@ -120,10 +122,12 @@ func newProjectAddCmd(opts *projectOpts) *cobra.Command {
 			} else {
 				fmt.Printf("project %s replaced\n", name)
 			}
-			if err := saveConfig(opts.configPath, cfg); err != nil {
+			if err := config.SaveConfig(opts.configPath, cfg); err != nil {
+				fmt.Println("failed to save config:", err)
 				return err
 			}
-			fmt.Printf("project %s saved\n", name)
+			fmt.Printf("project %s saved:\n", name)
+			printProject(replace)
 			return nil
 		},
 	}
@@ -134,13 +138,18 @@ func newProjectAddCmd(opts *projectOpts) *cobra.Command {
 }
 
 func newProjectDeleteCmd(opts *projectOpts) *cobra.Command {
-	return &cobra.Command{
-		Use:   "delete <project>",
-		Short: "Delete a project by name",
-		Args:  cobra.ExactArgs(1),
+	cmd := &cobra.Command{
+		Use:     "delete <project-name>",
+		Aliases: []string{"d"},
+		Short:   "Delete a project by name",
+		Args:    cobra.ExactArgs(1),
 		RunE: func(_ *cobra.Command, args []string) error {
 			name := args[0]
-			cfg, err := loadConfig(opts.configPath)
+			if name == "" {
+				fmt.Println("project name is required")
+				return nil
+			}
+			cfg, err := config.LoadConfig(opts.configPath)
 			if err != nil {
 				return err
 			}
@@ -154,56 +163,66 @@ func newProjectDeleteCmd(opts *projectOpts) *cobra.Command {
 				return fmt.Errorf("project %s not found", name)
 			}
 			cfg.Projects = filtered
-			if err := saveConfig(opts.configPath, cfg); err != nil {
+			if err := config.SaveConfig(opts.configPath, cfg); err != nil {
+				fmt.Println("failed to save config:", err)
 				return err
 			}
 			fmt.Printf("project %s deleted\n", name)
 			return nil
 		},
 	}
+	return cmd
 }
 
-func parseRemoteSpecs(specs []string, fallbackBucket string) ([]config.RcloneRemote, error) {
-	if len(specs) == 0 {
-		if fallbackBucket == "" {
-			return nil, errors.New("no remote provided and defaults.bucket empty")
-		}
-		return []config.RcloneRemote{
-			{Name: "default", Bucket: fallbackBucket},
-		}, nil
-	}
-	remotes := make([]config.RcloneRemote, 0, len(specs))
-	for _, spec := range specs {
-		parts := strings.SplitN(spec, ":", 2)
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return nil, fmt.Errorf("invalid remote spec %q (expected name:bucket)", spec)
-		}
-		remotes = append(remotes, config.RcloneRemote{
-			Name:   parts[0],
-			Bucket: parts[1],
-		})
-	}
-	return remotes, nil
-}
+func newProjectUpdateCmd(opts *projectOpts) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:     "update <project-name>",
+		Aliases: []string{"u"},
+		Short:   "Interactively update a project",
+		Args:    cobra.ExactArgs(1),
+		RunE: func(_ *cobra.Command, args []string) error {
+			name := args[0]
+			if name == "" {
+				fmt.Println("project name is required")
+				return nil
+			}
+			cfg, err := config.LoadConfig(opts.configPath)
+			if err != nil {
+				return err
+			}
+			var project *config.Project
+			for i := range cfg.Projects {
+				if cfg.Projects[i].Name == name {
+					project = &cfg.Projects[i]
+					break
+				}
+			}
+			if project == nil {
+				return fmt.Errorf("project %s not found", name)
+			}
 
-func loadConfig(path string) (*config.Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	var cfg config.Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, err
-	}
-	return &cfg, nil
-}
+			reader := bufio.NewReader(os.Stdin)
 
-func saveConfig(path string, cfg *config.Config) error {
-	out, err := yaml.Marshal(cfg)
-	if err != nil {
-		return err
+			if v := promptDefault(reader, "Project name", project.Name); v != "" {
+				project.Name = v
+			}
+			if sources := promptDefault(reader, "Source paths (comma separated)", strings.Join(project.SourcePaths, ",")); sources != "" {
+				project.SourcePaths = splitCSV(sources)
+			}
+			if cron := promptDefault(reader, "Cron expression", project.Cron); cron != "" {
+				project.Cron = cron
+			}
+			project.RcloneRemotes = promptRemotesWithDefaults(reader, project.RcloneRemotes)
+
+			if err := config.SaveConfig(opts.configPath, cfg); err != nil {
+				fmt.Println("failed to save config:", err)
+				return err
+			}
+			fmt.Printf("project %s updated\n", project.Name)
+			return nil
+		},
 	}
-	return os.WriteFile(path, out, 0o644)
+	return cmd
 }
 
 func NewServiceCmd() *cobra.Command {
@@ -236,50 +255,12 @@ func NewServiceCmd() *cobra.Command {
 	return cmd
 }
 
-func promptString(r *bufio.Reader, label string) string {
-	fmt.Printf("%s: ", label)
-	text, _ := r.ReadString('\n')
-	return strings.TrimSpace(text)
-}
-
-func promptList(r *bufio.Reader, label string) []string {
-	val := promptString(r, label)
-	if val == "" {
-		return nil
+func printProject(p config.Project) {
+	fmt.Printf("Name: %s\n", p.Name)
+	fmt.Printf("Source Paths: %v\n", p.SourcePaths)
+	fmt.Printf("Cron: %s\n", p.Cron)
+	fmt.Printf("Rclone Remotes:\n")
+	for _, r := range p.RcloneRemotes {
+		fmt.Printf("  - Name: %s, Bucket: %s\n", r.Name, r.Bucket)
 	}
-	parts := strings.Split(val, ",")
-	for i := range parts {
-		parts[i] = strings.TrimSpace(parts[i])
-	}
-	return parts
-}
-
-func promptRemotes(r *bufio.Reader) []config.RcloneRemote {
-	var remotes []config.RcloneRemote
-	for {
-		name := promptString(r, "rclone config name, can not be empty")
-		if name == "" {
-			fmt.Println("remote name cannot be empty, please retry.")
-			continue
-		}
-		var bucket string
-		for {
-			bucket = promptString(r, "Bucket for "+name)
-			if bucket == "" {
-				fmt.Println("bucket required, please retry.")
-				continue
-			}
-			break
-		}
-		remotes = append(remotes, config.RcloneRemote{
-			Name:   name,
-			Bucket: bucket,
-		})
-		more := promptString(r, "Add more remotes? (y/n)")
-		if strings.ToLower(more) == "y" {
-			continue
-		}
-		break
-	}
-	return remotes
 }
