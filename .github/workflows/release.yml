@@ -3,15 +3,16 @@ name: Build and Release
 on:
   push:
     tags:
-      - 'v*' # 当你推送 v1.0.0 这种标签时触发
+      - 'v*' 
 
 jobs:
   release:
     name: Build and Release Binaries
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  
     strategy:
       matrix:
-        # 定义需要支持的平台和架构
         include:
           - os: linux
             arch: amd64
@@ -46,11 +47,9 @@ jobs:
       - name: Upload Artifacts to Release
         uses: softprops/action-gh-release@v1
         with:
-          # 上传编译好的所有二进制文件
           files: |
             hermes-${{ matrix.os }}-${{ matrix.arch }}
             hermes-backup-${{ matrix.os }}-${{ matrix.arch }}
-          # 自动生成 Release Notes（可选）
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # GitHub 自动生成的 Token，无需手动配置
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
