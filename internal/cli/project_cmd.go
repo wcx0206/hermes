@@ -25,6 +25,7 @@ func NewProjectCmd() *cobra.Command {
 		Use:   "project",
 		Short: "Manage backup projects defined in config.yaml",
 	}
+	// 持久化的flag --config 用于指定配置文件路径
 	cmd.PersistentFlags().StringVar(&opts.configPath, "config", "config.yaml", "config file path")
 
 	cmd.AddCommand(newProjectListCmd(opts))
