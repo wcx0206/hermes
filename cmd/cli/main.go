@@ -9,6 +9,18 @@ import (
 )
 
 func main() {
+
+	// cfg, err := config.Load()
+	// if err != nil {
+	// 	log.Fatalf("load config: %v", err)
+	// }
+	// // Initialize logging
+	// err = logging.Init(cfg.Logging)
+	// if err != nil {
+	// 	log.Fatalf("init logger: %v", err)
+	// }
+	// defer logging.Sync()
+
 	root := &cobra.Command{
 		Use:   "hermes",
 		Short: "Manage hermes backup projects",

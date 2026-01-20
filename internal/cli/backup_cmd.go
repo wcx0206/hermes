@@ -2,7 +2,9 @@ package cli
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/wcx0206/hermes/internal/backup"
@@ -58,9 +60,12 @@ func newBackupRunCmd(opts *backupOpts) *cobra.Command {
 			}
 			ctx := context.Background()
 			for i := range projectList {
+				now := time.Now()
 				if err := backup.RunProject(ctx, cfg, &projectList[i]); err != nil {
 					return err
 				}
+				cost := time.Since(now)
+				fmt.Printf("Backup for project '%s' completed successfully, cost '%s'\n", projectList[i].Name, cost)
 			}
 			return nil
 		},
