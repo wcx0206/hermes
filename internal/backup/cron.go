@@ -44,7 +44,7 @@ func (s *CronServer) Start(ctx context.Context) error {
 	}
 	s.cron.Start()
 
-	s.logger.Info("Herme started")
+	s.logger.Info("Hermes Backup Server started")
 
 	go func() {
 		<-ctx.Done()

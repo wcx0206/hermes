@@ -5,11 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/spf13/cobra"
+	"github.com/wcx0206/hermes/internal/backup"
 )
 
 type serverOpts struct {
@@ -55,16 +54,13 @@ func newServerStartCmd(opts *serverOpts) *cobra.Command {
 				return fmt.Errorf("config file not found: %w", err)
 			}
 			// 校验当前备份进程是否在运行 基于存储在 /var/run/hermes-backup.pid 中的pid
-			data, err := os.ReadFile("/var/run/hermes-backup.pid")
+			pid, err := backup.GetPid()
 			switch {
 			case err == nil:
-				pidStr := strings.TrimSpace(string(data))
-				if pidStr != "" {
-					if pid, convErr := strconv.Atoi(pidStr); convErr == nil {
-						if proc, findErr := os.FindProcess(pid); findErr == nil {
-							if proc.Signal(syscall.Signal(0)) == nil {
-								return fmt.Errorf("backup server already running (pid=%d)", pid)
-							}
+				if pid != 0 {
+					if proc, findErr := os.FindProcess(pid); findErr == nil {
+						if proc.Signal(syscall.Signal(0)) == nil {
+							return fmt.Errorf("backup server already running (pid=%d)", pid)
 						}
 					}
 				}

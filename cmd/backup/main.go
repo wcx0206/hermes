@@ -27,7 +27,11 @@ func main() {
 	// Start cron server
 	svr := backup.NewCronServer(cfg)
 	if err := svr.Start(ctx); err != nil {
-		log.Fatalf("start scheduler: %v", err)
+		log.Fatalf("failed start CronServer: %v", err)
+	}
+	// Record pid
+	if err := backup.SavePid(); err != nil {
+		log.Fatalf("failed save pid: %v", err)
 	}
 	select {}
 }
